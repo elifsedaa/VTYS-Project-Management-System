@@ -1,0 +1,128 @@
+{% extends "base.html" %}
+
+{% block page_title %}Raporlar{% endblock %}
+
+{% block heading %}Raporlar{% endblock %}
+
+{% block content %}
+<div class="content-card">
+    <h2><i class="fas fa-check-double"></i> Tamamlanan Görevler</h2>
+    <div class="table-container">
+        <table>
+            <thead>
+                <tr>
+                    <th>Görev</th>
+                    <th>Proje</th>
+                    <th>Atanan</th>
+                    <th>Başlangıç</th>
+                    <th>Bitiş</th>
+                </tr>
+            </thead>
+            <tbody>
+                {% if completed %}
+                    {% for c in completed %}
+                    <tr>
+                        <td><strong>{{ c.task_title }}</strong></td>
+                        <td>{{ c.project_name }}</td>
+                        <td>{{ c.EmployeeName }}</td>
+                        <td>{{ c.start_date.strftime('%d.%m.%Y') }}</td>
+                        <td>{{ c.due_date.strftime('%d.%m.%Y') if c.due_date else '-' }}</td>
+                    </tr>
+                    {% endfor %}
+                {% else %}
+                    <tr><td colspan="5" class="empty-state">
+                        <i class="fas fa-inbox"></i>
+                        <h3>Henüz tamamlanan görev yok</h3>
+                    </td></tr>
+                {% endif %}
+            </tbody>
+        </table>
+    </div>
+</div>
+
+<div class="content-card">
+    <h2><i class="fas fa-history"></i> Görev Durum Geçmişi (Trigger Logları)</h2>
+    <div class="table-container">
+        <table>
+            <thead>
+                <tr>
+                    <th>Görev</th>
+                    <th>Eski Durum</th>
+                    <th>Yeni Durum</th>
+                    <th>Değiştiren</th>
+                    <th>Tarih</th>
+                </tr>
+            </thead>
+            <tbody>
+                {% if history %}
+                    {% for h in history %}
+                    <tr>
+                        <td><strong>{{ h.task_title }}</strong></td>
+                        <td><span class="badge">{{ h.old_status or 'Yeni' }}</span></td>
+                        <td><span class="badge success">{{ h.new_status }}</span></td>
+                        <td>{{ h.changed_by_name }}</td>
+                        <td>{{ h.changed_at.strftime('%d.%m.%Y %H:%M') }}</td>
+                    </tr>
+                    {% endfor %}
+                {% else %}
+                    <tr><td colspan="5" class="empty-state">
+                        <i class="fas fa-history"></i>
+                        <h3>Henüz geçmiş kaydı yok</h3>
+                    </td></tr>
+                {% endif %}
+            </tbody>
+        </table>
+    </div>
+</div>
+
+<div class="content-card">
+    <h2><i class="fas fa-bell"></i> Bildirimler (Trigger Bildirimleri)</h2>
+    <div class="table-container">
+        <table>
+            <thead>
+                <tr>
+                    <th>Görev</th>
+                    <th>Kullanıcı</th>
+                    <th>Mesaj</th>
+                    <th>Tip</th>
+                    <th>Tarih</th>
+                    <th>Okundu</th>
+                </tr>
+            </thead>
+            <tbody>
+                {% if notifications %}
+                    {% for n in notifications %}
+                    <tr>
+                        <td><strong>{{ n.task_title }}</strong></td>
+                        <td>{{ n.user_name }}</td>
+                        <td>{{ n.message }}</td>
+                        <td>
+                            {% if 'Gecikme' in n.notification_type %}
+                                <span class="badge danger">{{ n.notification_type }}</span>
+                            {% elif 'Deadline' in n.notification_type %}
+                                <span class="badge warning">{{ n.notification_type }}</span>
+                            {% else %}
+                                <span class="badge success">{{ n.notification_type }}</span>
+                            {% endif %}
+                        </td>
+                        <td>{{ n.created_at.strftime('%d.%m.%Y %H:%M') }}</td>
+                        <td>
+                            {% if n.is_read %}
+                                <span class="badge success"><i class="fas fa-check"></i> Okundu</span>
+                            {% else %}
+                                <span class="badge warning"><i class="fas fa-envelope"></i> Yeni</span>
+                            {% endif %}
+                        </td>
+                    </tr>
+                    {% endfor %}
+                {% else %}
+                    <tr><td colspan="6" class="empty-state">
+                        <i class="fas fa-bell-slash"></i>
+                        <h3>Henüz bildirim yok</h3>
+                    </td></tr>
+                {% endif %}
+            </tbody>
+        </table>
+    </div>
+</div>
+{% endblock %}

@@ -1,0 +1,185 @@
+{% extends "base.html" %}
+
+{% block page_title %}Projeler{% endblock %}
+
+{% block heading %}Projeler{% endblock %}
+
+{% block content %}
+<div class="btn-group">
+    <button class="btn-primary" onclick="addProject()">
+        <i class="fas fa-plus"></i> Yeni Proje Ekle
+    </button>
+    <input type="text" id="projectSearch" placeholder="Proje ara..." 
+           onkeyup="filterTable('projectSearch', 'projectsTable')" 
+           style="padding: 10px; border: 2px solid #e2e8f0; border-radius: 8px; width: 300px;">
+</div>
+
+<div class="content-card">
+    <h2><i class="fas fa-folder-open"></i> Tüm Projeler</h2>
+    <div class="table-container">
+        <table id="projectsTable">
+            <thead>
+                <tr>
+                    <th>ID</th>
+                    <th>Proje Adı</th>
+                    <th>Açıklama</th>
+                    <th>Başlangıç</th>
+                    <th>Bitiş</th>
+                    <th>Durum</th>
+                    <th>İşlemler</th>
+                </tr>
+            </thead>
+            <tbody id="projectsTableBody">
+                {% for p in projects %}
+                <tr>
+                    <td><strong>{{ p.project_id }}</strong></td>
+                    <td><strong>{{ p.project_name }}</strong></td>
+                    <td>{{ p.description or '-' }}</td>
+                    <td>{{ p.start_date.strftime('%d.%m.%Y') }}</td>
+                    <td>{{ p.end_date.strftime('%d.%m.%Y') if p.end_date else '-' }}</td>
+                    <td><span class="badge success">{{ p.status }}</span></td>
+                    <td>
+                        <button class="btn-warning btn-sm" onclick="editProject({{ p.project_id }})">
+                            <i class="fas fa-edit"></i>
+                        </button>
+                        <button class="btn-danger btn-sm" onclick="deleteProject({{ p.project_id }})">
+                            <i class="fas fa-trash"></i>
+                        </button>
+                    </td>
+                </tr>
+                {% endfor %}
+            </tbody>
+        </table>
+    </div>
+</div>
+
+<div id="projectModal" class="modal">
+    <div class="modal-content">
+        <div class="modal-header">
+            <h2 id="modalTitle">Yeni Proje Ekle</h2>
+            <button class="close-btn" onclick="closeModal('projectModal')">&times;</button>
+        </div>
+        <form id="projectForm" class="modal-form" onsubmit="saveProject(event)">
+            <input type="hidden" id="projectId">
+            <div class="form-group">
+                <label>Proje Adı *</label>
+                <input type="text" name="project_name" id="projectName" required>
+            </div>
+            <div class="form-group">
+                <label>Açıklama</label>
+                <textarea name="description" id="projectDescription"></textarea>
+            </div>
+            <div class="form-row">
+                <div class="form-group">
+                    <label>Başlangıç Tarihi *</label>
+                    <input type="date" name="start_date" id="projectStartDate" required>
+                </div>
+                <div class="form-group">
+                    <label>Bitiş Tarihi</label>
+                    <input type="date" name="end_date" id="projectEndDate">
+                </div>
+            </div>
+            <div class="form-group">
+                <label>Durum</label>
+                <select name="status" id="projectStatus">
+                    <option value="Aktif">Aktif</option>
+                    <option value="Devam Ediyor">Devam Ediyor</option>
+                    <option value="Tamamlandı">Tamamlandı</option>
+                    <option value="Planlandı">Planlandı</option>
+                </select>
+            </div>
+            <button type="submit" class="btn-primary">
+                <i class="fas fa-save"></i> Kaydet
+            </button>
+        </form>
+    </div>
+</div>
+{% endblock %}
+
+{% block scripts %}
+<script>
+const addProject = () => {
+    document.getElementById('projectForm').reset();
+    document.getElementById('projectId').value = '';
+    document.getElementById('modalTitle').textContent = 'Yeni Proje Ekle';
+    openModal('projectModal');
+};
+
+const editProject = async (id) => {
+    const response = await fetch(`/api/projects?id=${id}`);
+    const data = await response.json();
+    const project = data.project;
+    
+    document.getElementById('projectId').value = project.project_id;
+    document.getElementById('projectName').value = project.project_name;
+    document.getElementById('projectDescription').value = project.description || '';
+    document.getElementById('projectStartDate').value = project.start_date.split('T')[0];
+    document.getElementById('projectEndDate').value = project.end_date ? project.end_date.split('T')[0] : '';
+    document.getElementById('projectStatus').value = project.status;
+    
+    document.getElementById('modalTitle').textContent = 'Proje Düzenle';
+    openModal('projectModal');
+};
+
+const saveProject = async (e) => {
+    e.preventDefault();
+    
+    const formData = new FormData(e.target);
+    const data = {
+        project_name: formData.get('project_name'),
+        description: formData.get('description'),
+        start_date: formData.get('start_date'),
+        end_date: formData.get('end_date') || null,
+        status: formData.get('status')
+    };
+    
+    const projectId = document.getElementById('projectId').value;
+    const method = projectId ? 'PUT' : 'POST';
+    
+    if (projectId) {
+        data.project_id = projectId;
+    }
+    
+    try {
+        const response = await fetch('/api/projects', {
+            method: method,
+            headers: { 'Content-Type': 'application/json' },
+            body: JSON.stringify(data)
+        });
+        
+        const result = await response.json();
+        
+        if (result.success) {
+            showAlert(result.message);
+            closeModal('projectModal');
+            location.reload();
+        } else {
+            showAlert(result.message || 'İşlem başarısız', 'error');
+        }
+    } catch (error) {
+        showAlert('Bir hata oluştu', 'error');
+    }
+};
+
+const deleteProject = async (id) => {
+    if (!confirm('Bu projeyi silmek istediğinizden emin misiniz?')) return;
+    
+    try {
+        const response = await fetch(`/api/projects?id=${id}`, {
+            method: 'DELETE'
+        });
+        
+        const result = await response.json();
+        
+        if (result.success) {
+            showAlert(result.message);
+            location.reload();
+        } else {
+            showAlert(result.message || 'Silme işlemi başarısız', 'error');
+        }
+    } catch (error) {
+        showAlert('Bir hata oluştu', 'error');
+    }
+};
+</script>
+{% endblock %}

@@ -1,0 +1,88 @@
+{% extends "base.html" %}
+
+{% block page_title %}Dashboard{% endblock %}
+
+{% block heading %}Dashboard{% endblock %}
+
+{% block content %}
+<div class="stats-grid">
+    <div class="stat-card blue">
+        <div class="icon"><i class="fas fa-project-diagram"></i></div>
+        <h3>{{ stats.total_projects }}</h3>
+        <p>Toplam Proje</p>
+    </div>
+    <div class="stat-card green">
+        <div class="icon"><i class="fas fa-check-circle"></i></div>
+        <h3>{{ stats.completed_tasks }}</h3>
+        <p>Tamamlanan Görev</p>
+    </div>
+    <div class="stat-card yellow">
+        <div class="icon"><i class="fas fa-tasks"></i></div>
+        <h3>{{ stats.active_tasks }}</h3>
+        <p>Aktif Görev</p>
+    </div>
+    <div class="stat-card red">
+        <div class="icon"><i class="fas fa-users"></i></div>
+        <h3>{{ stats.total_employees }}</h3>
+        <p>Çalışan Sayısı</p>
+    </div>
+</div>
+
+<div class="content-card">
+    <h2><i class="fas fa-clock"></i> Yaklaşan Deadline'lar</h2>
+    <div class="table-container">
+        <table>
+            <thead>
+                <tr>
+                    <th>Görev</th>
+                    <th>Proje</th>
+                    <th>Atanan Kişi</th>
+                    <th>Deadline</th>
+                    <th>Kalan Gün</th>
+                </tr>
+            </thead>
+            <tbody>
+                {% if upcoming %}
+                    {% for item in upcoming %}
+                    <tr>
+                        <td><strong>{{ item.task_title }}</strong></td>
+                        <td>{{ item.project_name }}</td>
+                        <td>{{ item.AssignedEmployee }}</td>
+                        <td>{{ item.due_date.strftime('%d.%m.%Y') }}</td>
+                        <td><span class="badge danger">{{ item.DaysLeft }} gün</span></td>
+                    </tr>
+                    {% endfor %}
+                {% else %}
+                    <tr><td colspan="5" class="empty-state">
+                        <i class="fas fa-calendar-check"></i>
+                        <h3>Yaklaşan deadline yok</h3>
+                        <p>Harika! Şu an acil bir görev bulunmuyor.</p>
+                    </td></tr>
+                {% endif %}
+            </tbody>
+        </table>
+    </div>
+</div>
+
+<div class="content-card">
+    <h2><i class="fas fa-chart-bar"></i> Departman Görev Dağılımı</h2>
+    <div class="table-container">
+        <table>
+            <thead>
+                <tr>
+                    <th>Departman</th>
+                    <th>Toplam Görev</th>
+                </tr>
+            </thead>
+            <tbody>
+                {% for dept in dept_tasks %}
+                <tr>
+                    <td><strong>{{ dept.department_name }}</strong></td>
+                    <td><span class="badge primary">{{ dept.TotalTasks }} görev</span></td>
+                </tr>
+                {% endfor %}
+            </tbody>
+        </table>
+    </div>
+</div>
+{% endblock %}
