@@ -153,6 +153,36 @@ class DatabaseManager:
             cursor.close()
             self.disconnect()
 
+    def execute_procedure(self, proc_name: str, params: Optional[Tuple] = None):
+        conn = self.connect()
+        cursor = conn.cursor()
+        try:
+            if params:
+                placeholders = ', '.join(['?' for _ in params])
+                query = f"EXEC {proc_name} {placeholders}"
+                cursor.execute(query, params)
+            else:
+                cursor.execute(f"EXEC {proc_name}")
+
+            results = []
+            if cursor.description:  # SELECT dönen SP'ler için
+                columns = [column[0] for column in cursor.description]
+                rows = cursor.fetchall()
+                results = [dict(zip(columns, row)) for row in rows]
+
+            conn.commit()  # ✅ FETCH'TEN SONRA
+
+            return results
+
+        except pyodbc.Error as e:
+            conn.rollback()
+            print(f"Prosedür hatası: {e}")
+            raise
+
+        finally:
+            cursor.close()
+            self.disconnect()
+
     # def execute_procedure(self, proc_name: str, params: Optional[Tuple] = None) -> List[Dict[str, Any]]:
     #     """
     #     Stored procedure çalıştır
@@ -194,34 +224,34 @@ class DatabaseManager:
     #     finally:
     #         cursor.close()
     #         self.disconnect()
-
-    def execute_procedure(self, proc_name: str, params: Optional[Tuple] = None) -> List[Dict[str, Any]]:
-        conn = self.connect()
-        cursor = conn.cursor()
-        try:
-            if params:
-                placeholders = ', '.join(['?' for _ in params])
-                query = f"EXEC {proc_name} {placeholders}"
-                cursor.execute(query, params)
-            else:
-                cursor.execute(f"EXEC {proc_name}")
-
-            # --- BU KISIM ÇOK ÖNEMLİ ---
-            conn.commit()  # Veriyi kalıcı hale getir
-
-            if cursor.description:
-                columns = [column[0] for column in cursor.description]
-                results = [dict(zip(columns, row)) for row in cursor.fetchall()]
-                return results
-            return []
-        except pyodbc.Error as e:
-            conn.rollback()  # Hata varsa geri al
-            print(f"Prosedür hatası: {e}")
-            raise
-        finally:
-            cursor.close()
-            self.disconnect()
-
+    #
+    # def execute_procedure(self, proc_name: str, params: Optional[Tuple] = None) -> List[Dict[str, Any]]:
+    #     conn = self.connect()
+    #     cursor = conn.cursor()
+    #     try:
+    #         if params:
+    #             placeholders = ', '.join(['?' for _ in params])
+    #             query = f"EXEC {proc_name} {placeholders}"
+    #             cursor.execute(query, params)
+    #         else:
+    #             cursor.execute(f"EXEC {proc_name}")
+    #
+    #         # --- BU KISIM ÇOK ÖNEMLİ ---
+    #         conn.commit()  # Veriyi kalıcı hale getir
+    #
+    #         if cursor.description:
+    #             columns = [column[0] for column in cursor.description]
+    #             results = [dict(zip(columns, row)) for row in cursor.fetchall()]
+    #             return results
+    #         return []
+    #     except pyodbc.Error as e:
+    #         conn.rollback()  # Hata varsa geri al
+    #         print(f"Prosedür hatası: {e}")
+    #         raise
+    #     finally:
+    #         cursor.close()
+    #         self.disconnect()
+    #
 
 
 

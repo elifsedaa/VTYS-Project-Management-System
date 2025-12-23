@@ -531,6 +531,10 @@ SELECT * FROM vw_UpcomingDeadlines
 
 ---vs...
 
+
+
+
+
 CREATE VIEW V_TaskDetails AS
 SELECT 
     t.task_id,
@@ -723,7 +727,7 @@ BEGIN
     SET NOCOUNT ON;
 
     ------------------------------------------------
-    -- 1) Duplicate Task Kontrolü (GÜÇLÜ KORUMA)
+    -- 1) Duplicate Task Kontrolü 
     ------------------------------------------------
     IF EXISTS (
         SELECT 1 FROM Tasks 
@@ -782,12 +786,6 @@ WHERE task_title = 'Raporlama Modülü Testi'
 
 
 
-DELETE FROM Tasks
-WHERE task_id BETWEEN 21 AND 28;
-
-
-DELETE FROM TaskStatusHistory
-WHERE task_id BETWEEN 21 AND 28;
 
 DELETE FROM Tasks
 WHERE task_id BETWEEN 21 AND 28;
@@ -842,7 +840,7 @@ BEGIN
     VALUES (@task_id, @old_status, @new_status, @changed_by);
 
     ----------------------------------------------------
-    -- 5) Yeni statüyü geri döndür (raporlamada kolaylýk)
+    -- 5) Yeni statüyü geri döndür 
     ----------------------------------------------------
     SELECT 
         @task_id AS TaskID,
@@ -1081,3 +1079,33 @@ WHERE project_id = 1;
 SELECT * FROM Tasks
 WHERE due_date BETWEEN GETDATE() AND DATEADD(day, 7, GETDATE());
 
+
+
+
+CREATE PROCEDURE sp_AddTask_WithTransaction
+    @task_title NVARCHAR(100),
+    @project_id INT,
+    @employee_id INT,
+    @due_date DATE
+AS
+BEGIN
+    BEGIN TRY
+        BEGIN TRANSACTION;
+
+        -- 1. Görev ekleme
+        INSERT INTO Tasks (task_title, project_id, employee_id, status, due_date)
+        VALUES (@task_title, @project_id, @employee_id, 'Yeni', @due_date);
+
+        DECLARE @newTaskId INT = SCOPE_IDENTITY();
+
+        -- 2. Görev durum geçmiþine kayýt
+        INSERT INTO TaskStatusHistory (task_id, old_status, new_status, change_date)
+        VALUES (@newTaskId, NULL, 'Yeni', GETDATE());
+
+        COMMIT TRANSACTION;
+    END TRY
+    BEGIN CATCH
+        ROLLBACK TRANSACTION;
+        THROW;
+    END CATCH
+END;
